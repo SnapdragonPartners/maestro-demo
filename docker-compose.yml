@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: maestro-demo-dev:latest
+    container_name: maestro-demo-dev
+    volumes:
+      - .:/workspace
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+      - "8080:8080"
+      - "9000:9000"
+    environment:
+      - PYTHONPATH=/workspace
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    user: developer
+    command: /bin/bash
