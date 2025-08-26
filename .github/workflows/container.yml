@@ -1,0 +1,148 @@
+name: Container Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'scripts/**'
+      - '.github/workflows/container.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml' 
+      - 'scripts/**'
+      - '.github/workflows/container.yml'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: maestro-demo-dev
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build container image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: false
+        load: true
+        tags: ${{ env.IMAGE_NAME }}:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Test container boot
+      run: |
+        echo "Testing container boot..."
+        docker run --rm -d --name test-boot ${{ env.IMAGE_NAME }}:test
+        sleep 5
+        if docker ps | grep test-boot; then
+          echo "✓ Container boot test passed"
+          docker stop test-boot
+        else
+          echo "✗ Container boot test failed"
+          exit 1
+        fi
+        
+    - name: Test container health check
+      run: |
+        echo "Testing container health check..."
+        docker run --rm -d --name test-health ${{ env.IMAGE_NAME }}:test
+        
+        # Wait for health check to initialize
+        sleep 10
+        
+        # Check health status
+        health_status=$(docker inspect --format='{{.State.Health.Status}}' test-health 2>/dev/null || echo "no-health-check")
+        
+        if [ "$health_status" = "healthy" ] || [ "$health_status" = "no-health-check" ]; then
+          echo "✓ Container health check passed (status: $health_status)"
+        else
+          echo "✗ Container health check failed (status: $health_status)"
+          docker logs test-health
+          docker stop test-health
+          exit 1
+        fi
+        
+        docker stop test-health
+        
+    - name: Test development tools
+      run: |
+        echo "Testing development tools..."
+        docker run --rm -v ${{ github.workspace }}/scripts:/test-scripts ${{ env.IMAGE_NAME }}:test \
+          /bin/bash /test-scripts/test-container-tools.sh
+          
+    - name: Test health check script
+      run: |
+        echo "Testing health check script..."
+        docker run --rm -v ${{ github.workspace }}/scripts:/test-scripts ${{ env.IMAGE_NAME }}:test \
+          /bin/bash /test-scripts/health-check.sh
+          
+    - name: Test docker-compose configuration
+      run: |
+        echo "Testing docker-compose configuration..."
+        docker-compose config --quiet
+        echo "✓ docker-compose configuration is valid"
+        
+    - name: Build and push to registry
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Container security scan
+      if: github.event_name != 'pull_request'
+      uses: anchore/scan-action@v3
+      with:
+        image: ${{ env.IMAGE_NAME }}:test
+        fail-build: false
+        severity-cutoff: high
+        
+    - name: Upload security scan results
+      if: github.event_name != 'pull_request'
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif
+      continue-on-error: true
