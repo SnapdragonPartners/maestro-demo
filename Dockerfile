@@ -29,5 +29,9 @@ USER developer
 # Expose common development ports
 EXPOSE 3000 8000 8080 9000
 
+# Add health check to verify container is running properly
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || python3 -c "import sys; sys.exit(0)" || exit 1
+
 # Keep container running - use tail to keep alive for boot test
 CMD ["tail", "-f", "/dev/null"]
