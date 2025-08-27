@@ -1,37 +1,38 @@
-# Minimal development environment
-FROM ubuntu:22.04
+# Go-optimized development environment with security constraints
+FROM golang:1.21-alpine3.18
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=UTC
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
+# Set environment variables for Go
+ENV GO111MODULE=on
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
-# Create non-root user
-RUN useradd -m -s /bin/bash -u 1000 developer && \
-    usermod -aG sudo developer && \
-    echo 'developer ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# Install minimal required packages for Go development
+RUN apk add --no-cache \
+    git \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
 
-# Install essential tools only
-RUN apt-get update && apt-get install -y \
-    curl wget git vim nano \
-    ca-certificates build-essential \
-    python3 python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+# Create necessary directories with proper permissions
+RUN mkdir -p /tmp && chmod 1777 /tmp && \
+    mkdir -p /go/src /go/bin /go/pkg && \
+    mkdir -p /workspace && \
+    chown -R nobody:nobody /go /workspace /tmp
 
-# Set working directory and ownership
+# Set working directory
 WORKDIR /workspace
-RUN chown -R developer:developer /workspace
 
-# Switch to developer user
-USER developer
+# Switch to nobody user for security (rootless execution)
+USER nobody
 
-# Expose common development ports
-EXPOSE 3000 8000 8080 9000
+# No network ports exposed for security
+# No EXPOSE directives - networking will be disabled
 
-# Add health check to verify container is running properly
+# Health check that works with nobody user and no network
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || python3 -c "import sys; sys.exit(0)" || exit 1
+    CMD go version || exit 1
 
-# Keep container running - use tail to keep alive for boot test
+# Keep container running for development work
 CMD ["tail", "-f", "/dev/null"]
