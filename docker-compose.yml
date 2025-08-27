@@ -7,17 +7,25 @@ services:
       dockerfile: Dockerfile
     image: maestro-demo-dev:latest
     container_name: maestro-demo-dev
+    # Security constraints
+    user: nobody
+    read_only: true
+    network_mode: none
+    # Mount /tmp as writable volume
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
     volumes:
+      - .:/workspace:ro
+      # Allow writing to workspace for Go builds (override read-only)
       - .:/workspace
-    ports:
-      - "3000:3000"
-      - "8000:8000"
-      - "8080:8080"
-      - "9000:9000"
     environment:
-      - PYTHONPATH=/workspace
+      - GO111MODULE=on
+      - CGO_ENABLED=0
+      - GOOS=linux
+      - GOARCH=amd64
+      - GOPATH=/go
     stdin_open: true
     tty: true
     working_dir: /workspace
-    user: developer
-    command: /bin/bash
+    # No port mappings - networking disabled
+    command: tail -f /dev/null

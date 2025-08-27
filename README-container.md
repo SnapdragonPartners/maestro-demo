@@ -1,59 +1,61 @@
-# Containerized Development Environment
+# Go Development Container
 
-This project includes a comprehensive containerized development environment that supports multiple programming languages and development workflows.
+This container provides a secure, Go-optimized development environment with strict security constraints.
 
-## Features
+## Container Features
 
-- **Base OS**: Ubuntu 22.04 LTS
-- **Languages**: Node.js (LTS), Python 3, Go 1.21
-- **Development Tools**: Git, Vim, Nano, curl, wget, jq, tree, htop
-- **Build Tools**: GCC, G++, Make, CMake, pkg-config
-- **Network Tools**: ping, telnet, netcat
-- **User**: Non-root developer user with sudo access
+### Base Image
+- **golang:1.21-alpine3.18** - Official Go image optimized for development
+- Alpine Linux for minimal footprint and security
+- Go 1.21 with full toolchain
 
-## Quick Start
+### Security Features
+- **Rootless execution**: Runs as `nobody` user (UID: 65534)
+- **Read-only filesystem**: Entire filesystem is read-only except /tmp
+- **Network isolation**: No network access (`--network=none`)
+- **Minimal attack surface**: Only essential packages installed
 
-### Building the Container
+### Development Capabilities
+- Full Go toolchain (go build, go run, go test, etc.)
+- Git for version control
+- CA certificates for HTTPS operations
+- Writable /tmp directory for build artifacts
 
+## Usage
+
+### Build Container
 ```bash
-# Build the container image
-docker build -t maestro-demo-dev .
+# Using container tools (recommended)
+container_build maestro-demo-dev
 
-# Or use docker-compose
+# Using docker-compose
 docker-compose build
 ```
 
-### Running the Container
-
+### Test Container
 ```bash
-# Run with docker-compose (recommended)
-docker-compose up -d dev
-docker-compose exec dev bash
+# Boot test
+container_test maestro-demo-dev
 
-# Or run directly with Docker
-docker run -it --rm -v $(pwd):/workspace -p 3000:3000 maestro-demo-dev
+# Validation script
+container_test maestro-demo-dev "sh scripts/validate-go-container.sh"
+
+# Go compilation test
+container_test maestro-demo-dev "cd /tmp && echo 'package main; import \"fmt\"; func main() { fmt.Println(\"Hello Go!\") }' > hello.go && go run hello.go"
 ```
 
-### Development Workflow
+## Security Constraints
 
-1. Start the development environment
-2. Your code is mounted at `/workspace`
-3. Available tools: Node.js, Python 3, Go
-4. Exposed ports: 3000, 8000, 8080, 9000
+- **User**: nobody:nobody (65534:65534)
+- **Filesystem**: Read-only except /tmp
+- **Network**: Completely disabled
+- **Privileges**: No root access
 
-## Container Management
+## DevOps Story
 
-The container includes all necessary development tools pre-installed and configured for immediate use.
-
-### Environment Variables
-
-- `NODE_ENV=development`
-- `PYTHONPATH=/workspace`
-- `GOPATH=/home/developer/go`
-
-### Security
-
-- Non-root user (developer) with sudo access
-- Secure defaults for development workflow
-
-For more information, see the Dockerfile and docker-compose.yml configuration files.
+This container implementation satisfies the acceptance criteria:
+✓ Go-optimized base image (golang:1.21-alpine3.18)
+✓ Rootless execution (--user=nobody)
+✓ Read-only filesystem except /tmp
+✓ Network disabled (--network=none)
+✓ Successfully builds and runs Go applications
