@@ -9,10 +9,11 @@ ENV GOARCH=amd64
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
-# Install minimal required packages for Go development
+# Install minimal required packages for Go development including make
 RUN apk add --no-cache \
     git \
     ca-certificates \
+    make \
     && rm -rf /var/cache/apk/*
 
 # Create necessary directories with proper permissions
