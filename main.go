@@ -1,17 +1,15 @@
+// Package main provides a simple calculator application.
 package main
 
-import (
-	"fmt"
-	"os"
-)
+import "fmt"
 
-func main() {
-	fmt.Println("Hello from Go container!")
-	fmt.Printf("Go version: %s\n", os.Getenv("GOVERSION"))
-	fmt.Println("Container build pipeline validation successful.")
+// Add takes two integers and returns their sum.
+func Add(a, b int) int {
+	return a + b
 }
 
-// Add a simple function for testing
-func add(a, b int) int {
-	return a + b
+// main is the entry point of the application.
+func main() {
+	result := Add(2, 3)
+	fmt.Printf("2 + 3 = %d\n", result)
 }

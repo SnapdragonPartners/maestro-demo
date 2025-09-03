@@ -1,78 +1,59 @@
-# Makefile for Go development in containerized environment
-# Designed to work with security constraints: rootless, read-only filesystem, no network
-
-.PHONY: build test lint clean help
+# Variables
+BINARY_NAME=app
+BINARY_PATH=/tmp/$(BINARY_NAME)
+GO_FILES=$(shell find . -name "*.go" -type f)
 
 # Default target
-all: build test lint
+.PHONY: all
+all: clean build test
 
-# Build the Go application
+# Build target
+.PHONY: build
 build:
-	@echo "Building Go application..."
-	go build -o /tmp/maestro-demo .
-	@echo "Build successful - executable created at /tmp/maestro-demo"
+	@echo "Building $(BINARY_NAME)..."
+	@go build -o $(BINARY_PATH) ./...
+	@echo "Build complete: $(BINARY_PATH)"
 
-# Run tests
+# Test target
+.PHONY: test
 test:
-	@echo "Running Go tests..."
-	go test -v ./...
-	@echo "Tests completed successfully"
+	@echo "Running tests..."
+	@go test -v ./...
+	@echo "Tests complete"
 
-# Basic lint using go fmt and go vet (available in standard Go installation)
-lint:
-	@echo "Running Go linting..."
-	@echo "Checking code formatting..."
-	go fmt ./...
-	@echo "Running go vet..."
-	go vet ./...
-	@echo "Linting completed successfully"
-
-# Clean build artifacts (in /tmp due to read-only filesystem)
+# Clean target
+.PHONY: clean
 clean:
-	@echo "Cleaning build artifacts..."
-	rm -f /tmp/maestro-demo
-	@echo "Clean completed"
+	@echo "Cleaning up..."
+	@rm -f $(BINARY_PATH)
+	@echo "Clean complete"
 
-# Run the application (from /tmp due to read-only filesystem)
+# Lint target - updated to use golangci-lint with PATH
+.PHONY: lint
+lint:
+	@echo "Running linter..."
+	@export PATH=$$PATH:$$(go env GOPATH)/bin && golangci-lint run
+	@echo "Linting complete"
+
+# Development targets
+.PHONY: dev
+dev: clean build test lint
+
+# Run target
+.PHONY: run
 run: build
-	@echo "Running application..."
-	/tmp/maestro-demo
+	@echo "Running $(BINARY_NAME)..."
+	@$(BINARY_PATH)
 
-# Display available targets
+# Help target
+.PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  build  - Build the Go application"
-	@echo "  test   - Run tests"
-	@echo "  lint   - Run linting (go fmt + go vet)"
-	@echo "  clean  - Clean build artifacts"
-	@echo "  run    - Build and run the application"
-	@echo "  all    - Run build, test, and lint"
-	@echo "  help   - Show this help message"
-
-# Development workflow validation
-validate: build test lint
-	@echo "=== Container Build Pipeline Validation ==="
-	@echo "✓ Build pipeline: PASSED"
-	@echo "✓ Test framework: PASSED" 
-	@echo "✓ Linting tools: PASSED"
-	@echo "✓ Security constraints: Compatible with rootless, read-only filesystem"
-	@echo "✓ Development workflow: VALIDATED"
-
-# Go Module Management
-.PHONY: module-init module-validate module-clean
-
-module-init: ## Initialize and maintain Go module
-	@echo "Initializing Go module..."
-	@./scripts/init-go-module.sh
-
-module-validate: ## Validate Go module integrity
-	@echo "Validating Go module..."
-	@go mod verify
-	@go mod tidy
-	@echo "✓ Module validation completed"
-
-module-clean: ## Clean Go module cache
-	@echo "Cleaning Go module cache..."
-	@go clean -modcache
-	@echo "✓ Module cache cleaned"
-
+	@echo "  all     - Clean, build, and test"
+	@echo "  build   - Build the application"
+	@echo "  test    - Run tests"
+	@echo "  clean   - Clean build artifacts"
+	@echo "  lint    - Run golangci-lint"
+	@echo "  dev     - Run clean, build, test, and lint"
+	@echo "  run     - Build and run the application"
+	@echo "  help    - Show this help message"
