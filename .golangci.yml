@@ -1,0 +1,181 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - cyclop
+    - decorder
+    - depguard
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
+    - exhaustive
+    - exhaustruct
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gci
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goerr113
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - gomnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - gosmopolitan
+    - govet
+    - grouper
+    - importas
+    - ineffassign
+    - interfacebloat
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tagliatelle
+    - tenv
+    - testableexamples
+    - testpackage
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - varnamelen
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - wsl
+
+linters-settings:
+  cyclop:
+    max-complexity: 10
+  dupl:
+    threshold: 100
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  funlen:
+    lines: 80
+    statements: 40
+  gocognit:
+    min-complexity: 10
+  gocyclo:
+    min-complexity: 10
+  godot:
+    scope: declarations
+    exclude:
+      - "^fixme:"
+      - "^todo:"
+  gomnd:
+    ignored-numbers:
+      - '0'
+      - '1'
+      - '2'
+      - '10'
+      - '100'
+      - '1000'
+  govet:
+    check-shadowing: true
+  lll:
+    line-length: 120
+  misspell:
+    locale: US
+  nakedret:
+    max-func-lines: 30
+  nestif:
+    min-complexity: 4
+  nlreturn:
+    block-size: 1
+  varnamelen:
+    min-name-length: 2
+    ignore-names:
+      - err
+      - i
+      - j
+      - k
+      - v
+      - id
+  wsl:
+    strict-append: true
+    allow-assign-and-call: true
+    allow-multiline-assign: true
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gomnd
+        - goconst
+        - funlen
+        - gocognit
+        - gocyclo
+        - varnamelen
+        - wrapcheck
+    - linters:
+        - lll
+      source: "^//go:generate "
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+severity:
+  default-severity: error
