@@ -9,12 +9,21 @@ ENV GOARCH=amd64
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
-# Install minimal required packages for Go development including make
+# Install minimal required packages for Go development including make and gh
 RUN apk add --no-cache \
     git \
     ca-certificates \
     make \
-    && rm -rf /var/cache/apk/*
+    curl \
+    wget \
+    gnupg \
+    && rm -rf /var/cache/apk/* \
+    && wget -q -O /tmp/gh.tar.gz https://github.com/cli/cli/releases/download/v2.40.1/gh_2.40.1_linux_amd64.tar.gz \
+    && cd /tmp \
+    && tar -xzf gh.tar.gz \
+    && cp gh_2.40.1_linux_amd64/bin/gh /usr/local/bin/ \
+    && chmod +x /usr/local/bin/gh \
+    && rm -rf /tmp/gh*
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /tmp && chmod 1777 /tmp && \
