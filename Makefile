@@ -57,3 +57,22 @@ validate: build test lint
 	@echo "✓ Linting tools: PASSED"
 	@echo "✓ Security constraints: Compatible with rootless, read-only filesystem"
 	@echo "✓ Development workflow: VALIDATED"
+
+# Go Module Management
+.PHONY: module-init module-validate module-clean
+
+module-init: ## Initialize and maintain Go module
+	@echo "Initializing Go module..."
+	@./scripts/init-go-module.sh
+
+module-validate: ## Validate Go module integrity
+	@echo "Validating Go module..."
+	@go mod verify
+	@go mod tidy
+	@echo "✓ Module validation completed"
+
+module-clean: ## Clean Go module cache
+	@echo "Cleaning Go module cache..."
+	@go clean -modcache
+	@echo "✓ Module cache cleaned"
+
