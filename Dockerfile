@@ -9,7 +9,7 @@ ENV GOARCH=amd64
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 
-# Install minimal required packages for Go development including make and gh
+# Install minimal required packages for Go development including make, gh, and golangci-lint
 RUN apk add --no-cache \
     git \
     ca-certificates \
@@ -23,7 +23,13 @@ RUN apk add --no-cache \
     && tar -xzf gh.tar.gz \
     && cp gh_2.40.1_linux_amd64/bin/gh /usr/local/bin/ \
     && chmod +x /usr/local/bin/gh \
-    && rm -rf /tmp/gh*
+    && rm -rf /tmp/gh* \
+    && wget -q -O /tmp/golangci-lint.tar.gz https://github.com/golangci/golangci-lint/releases/download/v1.55.2/golangci-lint-1.55.2-linux-amd64.tar.gz \
+    && cd /tmp \
+    && tar -xzf golangci-lint.tar.gz \
+    && cp golangci-lint-1.55.2-linux-amd64/golangci-lint /usr/local/bin/ \
+    && chmod +x /usr/local/bin/golangci-lint \
+    && rm -rf /tmp/golangci-lint*
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /tmp && chmod 1777 /tmp && \
