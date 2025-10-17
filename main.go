@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -36,14 +35,31 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// healthHandler handles GET requests to the health endpoint
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	// Only allow GET requests
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Set Content-Type header to text/plain
+	w.Header().Set("Content-Type", "text/plain")
+	
+	// Write OK response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func main() {
 	// Check if home.html exists
 	if _, err := os.Stat("home.html"); os.IsNotExist(err) {
 		log.Fatal("home.html template file not found")
 	}
 
-	// Register the handler for the root path
+	// Register the handlers
 	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/health", healthHandler)
 
 	// Start the server
 	port := "8080"
@@ -51,6 +67,6 @@ func main() {
 		port = envPort
 	}
 
-	fmt.Printf("Server starting on port %s...\n", port)
+	log.Println("Server starting on port", port+"...")
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
