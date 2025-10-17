@@ -1,15 +1,19 @@
-// Package main provides a simple calculator application.
 package main
 
-import "fmt"
+import (
+	"log"
+	"net/http"
+)
 
-// Add takes two integers and returns their sum.
-func Add(a, b int) int {
-	return a + b
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Health check requested")
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
 
-// main is the entry point of the application.
 func main() {
-	result := Add(2, 3)
-	fmt.Printf("2 + 3 = %d\n", result)
+	http.HandleFunc("/health", healthHandler)
+	log.Println("Starting server on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
