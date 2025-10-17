@@ -45,11 +45,11 @@ func TestHomeHandler(t *testing.T) {
 	if !strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("response body does not contain HTML doctype")
 	}
-	
+
 	if !strings.Contains(body, "Welcome to Our Application") {
 		t.Error("response body does not contain expected title")
 	}
-	
+
 	if !strings.Contains(body, "home.html template") {
 		t.Error("response body does not contain expected template content")
 	}

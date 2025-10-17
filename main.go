@@ -15,10 +15,10 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// Set Content-Type header to text/html
 	w.Header().Set("Content-Type", "text/html")
-	
+
 	// Parse the template file
 	tmpl, err := template.ParseFiles("home.html")
 	if err != nil {
@@ -26,7 +26,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Execute the template and write to response
 	err = tmpl.Execute(w, nil)
 	if err != nil {
@@ -41,16 +41,16 @@ func main() {
 	if _, err := os.Stat("home.html"); os.IsNotExist(err) {
 		log.Fatal("home.html template file not found")
 	}
-	
+
 	// Register the handler for the root path
 	http.HandleFunc("/", homeHandler)
-	
+
 	// Start the server
 	port := "8080"
 	if envPort := os.Getenv("PORT"); envPort != "" {
 		port = envPort
 	}
-	
+
 	fmt.Printf("Server starting on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
