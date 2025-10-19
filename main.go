@@ -45,7 +45,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Set Content-Type header to text/plain
 	w.Header().Set("Content-Type", "text/plain")
-	
+
 	// Write OK response
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
