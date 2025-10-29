@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"encoding/json"
 	"html/template"
 	"log"
@@ -84,6 +85,13 @@ func loadQuestions() ([]Question, error) {
 		return nil, err
 	}
 
+
+	// Validate that correct index is within bounds of answers array
+	for i, q := range questions {
+		if q.Correct < 0 || q.Correct >= len(q.Answers) {
+			return nil, fmt.Errorf("question %d (id=%d): correct index %d is out of bounds for answers array of length %d", i, q.ID, q.Correct, len(q.Answers))
+		}
+	}
 	return questions, nil
 }
 
