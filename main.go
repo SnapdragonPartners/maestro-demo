@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"html/template"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,6 +14,9 @@ import (
 
 // NumQuestions defines how many questions to select for each quiz session
 const NumQuestions = 3
+
+// QuestionTimerSecs defines the countdown timer duration in seconds for each question
+const QuestionTimerSecs = 20
 
 // Question represents a quiz question with multiple-choice answers
 type Question struct {
@@ -154,12 +158,97 @@ func quizHandler(w http.ResponseWriter, r *http.Request) {
 		TotalQuestions int
 		Score          int
 		SessionID      string
+		TimerSeconds   int
 	}{
 		Question:       selectedQuestions[0],
 		QuestionNumber: 1,
 		TotalQuestions: len(selectedQuestions),
 		Score:          0,
 		SessionID:      sessionID,
+		TimerSeconds:   QuestionTimerSecs,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.Execute(w, data); err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// answerHandler handles POST /quiz/answer to process quiz answer submissions
+func answerHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		log.Printf("Error parsing form: %v", err)
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	sessionID := r.FormValue("sessionID")
+	answerStr := r.FormValue("answer")
+
+	if sessionID == "" || answerStr == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	sessionMux.RLock()
+	session, exists := sessions[sessionID]
+	sessionMux.RUnlock()
+
+	if !exists {
+		http.Error(w, "Session not found", http.StatusNotFound)
+		return
+	}
+
+	var answerIndex int
+	if _, err := fmt.Sscanf(answerStr, "%d", &answerIndex); err != nil {
+		http.Error(w, "Invalid answer format", http.StatusBadRequest)
+		return
+	}
+
+	currentQuestion := session.Questions[session.Current]
+	if answerIndex == currentQuestion.Correct {
+		sessionMux.Lock()
+		session.Score++
+		sessionMux.Unlock()
+	}
+
+	sessionMux.Lock()
+	session.Current++
+	sessionMux.Unlock()
+
+	if session.Current >= len(session.Questions) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, "<html><body><h1>Quiz Complete!</h1><p>Final Score: %d out of %d</p><a href='/quiz'>Start New Quiz</a></body></html>", session.Score, len(session.Questions))
+		return
+	}
+
+	tmpl, err := template.ParseFiles("quiz.html")
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		Question       Question
+		QuestionNumber int
+		TotalQuestions int
+		Score          int
+		SessionID      string
+		TimerSeconds   int
+	}{
+		Question:       session.Questions[session.Current],
+		QuestionNumber: session.Current + 1,
+		TotalQuestions: len(session.Questions),
+		Score:          session.Score,
+		SessionID:      sessionID,
+		TimerSeconds:   QuestionTimerSecs,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -190,6 +279,9 @@ func main() {
 	if _, err := os.Stat("home.html"); os.IsNotExist(err) {
 		log.Fatal("home.html not found")
 	}
+	if _, err := os.Stat("quiz.html"); os.IsNotExist(err) {
+		log.Fatal("quiz.html not found")
+	}
 
 	if _, err := os.Stat("questions.json"); os.IsNotExist(err) {
 		log.Fatal("questions.json not found")
@@ -199,6 +291,7 @@ func main() {
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/quiz", quizHandler)
+	http.HandleFunc("/quiz/answer", answerHandler)
 
 	// Start server
 	port := os.Getenv("PORT")
