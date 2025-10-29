@@ -232,3 +232,44 @@ func TestHealthHandlerMethodNotAllowed(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusMethodNotAllowed)
 	}
 }
+
+func TestLoadQuestionsValidation(t *testing.T) {
+	// Test with invalid correct index (out of bounds)
+	invalidJSON := `[
+		{
+			"id": 1,
+			"question": "Test question?",
+			"answers": ["A", "B", "C"],
+			"correct": 5
+		}
+	]`
+	
+	if err := os.WriteFile("questions.json", []byte(invalidJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("questions.json")
+	
+	_, err := loadQuestions()
+	if err == nil {
+		t.Error("Expected error for out of bounds correct index, got nil")
+	}
+	
+	// Test with negative correct index
+	negativeJSON := `[
+		{
+			"id": 2,
+			"question": "Another test?",
+			"answers": ["X", "Y", "Z"],
+			"correct": -1
+		}
+	]`
+	
+	if err := os.WriteFile("questions.json", []byte(negativeJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+	
+	_, err = loadQuestions()
+	if err == nil {
+		t.Error("Expected error for negative correct index, got nil")
+	}
+}

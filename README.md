@@ -41,3 +41,56 @@ docker run -it --rm -v $(pwd):/workspace maestro-demo-dev
 - `README-container.md`: Detailed container documentation
 
 The development environment is ready for application code deployment and testing.
+
+## Questions File Format
+
+The application requires a `questions.json` file at the repository root containing quiz questions.
+
+### Schema
+
+Each question in the JSON array must follow this structure:
+
+```json
+{
+  "id": <integer>,           // Unique question identifier
+  "question": "<string>",    // The question text
+  "answers": [<strings>],    // Array of possible answers
+  "correct": <integer>       // Index of the correct answer (0-based)
+}
+```
+
+### Example
+
+```json
+[
+  {
+    "id": 1,
+    "question": "What is the capital of France?",
+    "answers": ["London", "Paris", "Berlin", "Madrid"],
+    "correct": 1
+  },
+  {
+    "id": 2,
+    "question": "Which planet is known as the Red Planet?",
+    "answers": ["Venus", "Jupiter", "Mars", "Saturn"],
+    "correct": 2
+  }
+]
+```
+
+### Validation
+
+- The `correct` index must be within the bounds of the `answers` array (0 ≤ correct < len(answers))
+- The application validates this at startup and when loading questions
+- Invalid questions will cause the application to fail with a descriptive error message
+
+### Location
+
+The `questions.json` file must be located at the repository root (same directory as `main.go`).
+
+### Quiz Behavior
+
+- The application loads questions from `questions.json` at startup or when starting a new quiz
+- Each quiz session randomly selects exactly 3 questions (defined by `NumQuestions` constant)
+- The selection is random for each new quiz session
+- If fewer than 3 questions are available, all questions will be used
