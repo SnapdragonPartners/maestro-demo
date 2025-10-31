@@ -60,20 +60,20 @@ func TestQuizHandler(t *testing.T) {
 		{
 			"id": 1,
 			"question": "Test question 1?",
-			"answers": ["A", "B", "C", "D"],
-			"correct": 0
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 0
 		},
 		{
 			"id": 2,
 			"question": "Test question 2?",
-			"answers": ["A", "B", "C", "D"],
-			"correct": 1
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 1
 		},
 		{
 			"id": 3,
 			"question": "Test question 3?",
-			"answers": ["A", "B", "C", "D"],
-			"correct": 2
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 2
 		}
 	]`
 	if err := os.WriteFile("questions.json", []byte(questionsJSON), 0644); err != nil {
@@ -131,14 +131,16 @@ func TestQuizHandlerMethodNotAllowed(t *testing.T) {
 	}
 }
 
+
 func TestLoadQuestions(t *testing.T) {
 	// Create test questions.json file
 	questionsJSON := `[
 		{
 			"id": 1,
 			"question": "Test question?",
-			"answers": ["A", "B", "C", "D"],
-			"correct": 0
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 0,
+			"explanation": "This is a test explanation."
 		}
 	]`
 	if err := os.WriteFile("questions.json", []byte(questionsJSON), 0644); err != nil {
@@ -158,15 +160,19 @@ func TestLoadQuestions(t *testing.T) {
 	if questions[0].Question != "Test question?" {
 		t.Errorf("loadQuestions() returned wrong question text: got %v", questions[0].Question)
 	}
+
+	if questions[0].Explanation != "This is a test explanation." {
+		t.Errorf("loadQuestions() returned wrong explanation: got %v want 'This is a test explanation.'", questions[0].Explanation)
+	}
 }
 
 func TestSelectRandomQuestions(t *testing.T) {
 	questions := []Question{
-		{ID: 1, Question: "Q1", Answers: []string{"A", "B", "C", "D"}, Correct: 0},
-		{ID: 2, Question: "Q2", Answers: []string{"A", "B", "C", "D"}, Correct: 1},
-		{ID: 3, Question: "Q3", Answers: []string{"A", "B", "C", "D"}, Correct: 2},
-		{ID: 4, Question: "Q4", Answers: []string{"A", "B", "C", "D"}, Correct: 3},
-		{ID: 5, Question: "Q5", Answers: []string{"A", "B", "C", "D"}, Correct: 0},
+		{ID: 1, Question: "Q1", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 0},
+		{ID: 2, Question: "Q2", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 1},
+		{ID: 3, Question: "Q3", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 2},
+		{ID: 4, Question: "Q4", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 3},
+		{ID: 5, Question: "Q5", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 0},
 	}
 
 	selected := selectRandomQuestions(questions, 3)
@@ -192,8 +198,8 @@ func TestSelectRandomQuestions(t *testing.T) {
 
 func TestSelectRandomQuestionsFewerThanRequested(t *testing.T) {
 	questions := []Question{
-		{ID: 1, Question: "Q1", Answers: []string{"A", "B", "C", "D"}, Correct: 0},
-		{ID: 2, Question: "Q2", Answers: []string{"A", "B", "C", "D"}, Correct: 1},
+		{ID: 1, Question: "Q1", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 0},
+		{ID: 2, Question: "Q2", Choices: []string{"A", "B", "C", "D"}, AnswerIndex: 1},
 	}
 
 	selected := selectRandomQuestions(questions, 5)
@@ -239,8 +245,8 @@ func TestLoadQuestionsValidation(t *testing.T) {
 		{
 			"id": 1,
 			"question": "Test question?",
-			"answers": ["A", "B", "C"],
-			"correct": 5
+			"choices": ["A", "B", "C"],
+			"answer_index": 5
 		}
 	]`
 	
@@ -259,8 +265,8 @@ func TestLoadQuestionsValidation(t *testing.T) {
 		{
 			"id": 2,
 			"question": "Another test?",
-			"answers": ["X", "Y", "Z"],
-			"correct": -1
+			"choices": ["X", "Y", "Z"],
+			"answer_index": -1
 		}
 	]`
 	
