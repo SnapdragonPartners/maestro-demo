@@ -17,10 +17,11 @@ const NumQuestions = 3
 
 // Question represents a quiz question with multiple-choice answers
 type Question struct {
-	ID       int      `json:"id"`
-	Question string   `json:"question"`
-	Answers  []string `json:"answers"`
-	Correct  int      `json:"correct"`
+	ID          int      `json:"id"`
+	Question    string   `json:"question"`
+	Choices     []string `json:"choices"`
+	AnswerIndex int      `json:"answer_index"`
+	Explanation string   `json:"explanation"`
 }
 
 // QuizSession represents an active quiz session
@@ -88,8 +89,8 @@ func loadQuestions() ([]Question, error) {
 
 	// Validate that correct index is within bounds of answers array
 	for i, q := range questions {
-		if q.Correct < 0 || q.Correct >= len(q.Answers) {
-			return nil, fmt.Errorf("question %d (id=%d): correct index %d is out of bounds for answers array of length %d", i, q.ID, q.Correct, len(q.Answers))
+		if q.AnswerIndex < 0 || q.AnswerIndex >= len(q.Choices) {
+			return nil, fmt.Errorf("question %d (id=%d): correct index %d is out of bounds for answers array of length %d", i, q.ID, q.AnswerIndex, len(q.Choices))
 		}
 	}
 	return questions, nil
