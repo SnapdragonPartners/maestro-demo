@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .results-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .score-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+        .percentage {
+            font-size: 24px;
+            color: #666;
+            margin: 10px 0;
+        }
+        .message {
+            font-size: 18px;
+            color: #555;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .session-info {
+            font-size: 14px;
+            color: #999;
+            margin-top: 30px;
+        }
+        .home-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 24px;
+            background-color: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .home-link:hover {
+            background-color: #0b7dda;
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <h1>Quiz Complete!</h1>
+        
+        <div class="score-display">
+            {{.Score}} / {{.TotalQuestions}}
+        </div>
+        
+        <div class="percentage">
+            {{printf "%.1f" .Percentage}}% Correct
+        </div>
+        
+        <div class="message">
+            {{if ge .Percentage 80.0}}
+                Excellent work! You have a strong understanding of the material.
+            {{else if ge .Percentage 60.0}}
+                Good job! You're on the right track.
+            {{else if ge .Percentage 40.0}}
+                Not bad, but there's room for improvement.
+            {{else}}
+                Keep studying! Practice makes perfect.
+            {{end}}
+        </div>
+        
+        <div class="session-info">
+            Session ID: {{.SessionID}}
+        </div>
+        
+        <a href="/" class="home-link">Return to Home</a>
+    </div>
+</body>
+</html>
