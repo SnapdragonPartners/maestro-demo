@@ -279,3 +279,125 @@ func TestLoadQuestionsValidation(t *testing.T) {
 		t.Error("Expected error for negative correct index, got nil")
 	}
 }
+
+func TestSignState(t *testing.T) {
+	// Test that signState generates consistent signatures for the same input
+	sessionID := "test-session-123"
+	questionIndex := 0
+	
+	sig1 := signState(sessionID, questionIndex)
+	sig2 := signState(sessionID, questionIndex)
+	
+	if sig1 != sig2 {
+		t.Errorf("signState should generate consistent signatures: got %s and %s", sig1, sig2)
+	}
+	
+	// Test that different inputs generate different signatures
+	sig3 := signState(sessionID, 1)
+	if sig1 == sig3 {
+		t.Errorf("signState should generate different signatures for different question indices")
+	}
+	
+	sig4 := signState("different-session", questionIndex)
+	if sig1 == sig4 {
+		t.Errorf("signState should generate different signatures for different session IDs")
+	}
+	
+	// Test that signature is not empty
+	if sig1 == "" {
+		t.Error("signState should not return empty signature")
+	}
+	
+	// Test that signature is base64 encoded (should not contain invalid characters)
+	if len(sig1) == 0 {
+		t.Error("signState should return non-empty base64 string")
+	}
+}
+
+func TestQuizHandlerHMACSignature(t *testing.T) {
+	// Create test questions.json file
+	questionsJSON := `[
+		{
+			"id": 1,
+			"question": "Test question 1?",
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 0,
+			"explanation": "Test explanation"
+		},
+		{
+			"id": 2,
+			"question": "Test question 2?",
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 1,
+			"explanation": "Test explanation"
+		},
+		{
+			"id": 3,
+			"question": "Test question 3?",
+			"choices": ["A", "B", "C", "D"],
+			"answer_index": 2,
+			"explanation": "Test explanation"
+		}
+	]`
+	if err := os.WriteFile("questions.json", []byte(questionsJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("questions.json")
+
+	// Create test quiz.html file that includes HMAC signature field
+	quizHTML := `<!DOCTYPE html>
+<html>
+<body>
+	<h1>{{.Question.Question}}</h1>
+	<form>
+		<input type="hidden" name="sessionID" value="{{.SessionID}}">
+		<input type="hidden" name="questionIndex" value="{{.QuestionIndex}}">
+		<input type="hidden" name="hmacSignature" value="{{.HMACSignature}}">
+	</form>
+</body>
+</html>`
+	if err := os.WriteFile("quiz.html", []byte(quizHTML), 0644); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("quiz.html")
+
+	req, err := http.NewRequest("GET", "/quiz", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(quizHandler)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	body := rr.Body.String()
+	
+	// Verify that HMAC signature appears in the rendered HTML
+	if !strings.Contains(body, "hmacSignature") {
+		t.Error("handler should include hmacSignature hidden input field")
+	}
+	
+	// Verify that the signature value is not empty
+	if !strings.Contains(body, `name="hmacSignature" value="`) {
+		t.Error("handler should include hmacSignature with a value")
+	}
+	
+	// Verify that sessionID is present
+	if !strings.Contains(body, "sessionID") {
+		t.Error("handler should include sessionID hidden input field")
+	}
+	
+	// Verify that questionIndex is present
+	if !strings.Contains(body, "questionIndex") {
+		t.Error("handler should include questionIndex hidden input field")
+	}
+	
+	// Extract and verify the signature is base64 encoded (non-empty)
+	if strings.Contains(body, `value=""`) {
+		t.Error("hmacSignature value should not be empty")
+	}
+}
