@@ -1,8 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"math/rand"
@@ -14,6 +17,9 @@ import (
 
 // NumQuestions defines how many questions to select for each quiz session
 const NumQuestions = 3
+
+// hmacSecret is the secret key used for HMAC signing of form state
+const hmacSecret = "your-secret-key-here-change-in-production"
 
 // Question represents a quiz question with multiple-choice answers
 type Question struct {
@@ -117,6 +123,7 @@ func selectRandomQuestions(questions []Question, n int) []Question {
 }
 
 // quizHandler handles the GET /quiz endpoint to start a new quiz session
+// quizHandler handles the GET /quiz endpoint to start a new quiz session
 func quizHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -133,6 +140,13 @@ func quizHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Select random questions
 	selectedQuestions := selectRandomQuestions(allQuestions, NumQuestions)
+	
+	// Log selected question IDs for randomization verification
+	questionIDs := make([]int, len(selectedQuestions))
+	for i, q := range selectedQuestions {
+		questionIDs[i] = q.ID
+	}
+	log.Printf("Quiz started with questions: %v", questionIDs)
 
 	// Create a new session
 	sessionID := generateSessionID()
@@ -149,6 +163,9 @@ func quizHandler(w http.ResponseWriter, r *http.Request) {
 	sessions[sessionID] = session
 	sessionMux.Unlock()
 
+	// Generate HMAC signature for the current state
+	hmacSignature := signState(sessionID, 0)
+
 	// Parse and render template
 	tmpl, err := template.ParseFiles("quiz.html")
 	if err != nil {
@@ -163,12 +180,16 @@ func quizHandler(w http.ResponseWriter, r *http.Request) {
 		TotalQuestions int
 		Score          int
 		SessionID      string
+		QuestionIndex  int
+		HMACSignature  string
 	}{
 		Question:       selectedQuestions[0],
 		QuestionNumber: 1,
 		TotalQuestions: len(selectedQuestions),
 		Score:          0,
 		SessionID:      sessionID,
+		QuestionIndex:  0,
+		HMACSignature:  hmacSignature,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -177,7 +198,6 @@ func quizHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
-
 // generateSessionID creates a unique session identifier
 func generateSessionID() string {
 	return time.Now().Format("20060102150405") + "-" + randString(8)
@@ -219,4 +239,17 @@ func main() {
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// signState generates an HMAC signature for the given state data
+func signState(sessionID string, questionIndex int) string {
+	// Create the message to sign: sessionID:questionIndex
+	message := fmt.Sprintf("%s:%d", sessionID, questionIndex)
+	
+	// Create HMAC-SHA256 hash
+	h := hmac.New(sha256.New, []byte(hmacSecret))
+	h.Write([]byte(message))
+	
+	// Return base64-encoded signature
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
